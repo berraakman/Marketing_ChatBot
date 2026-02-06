@@ -9,11 +9,24 @@
 </head>
 
 <body>
-    <div class="app-root">
+    <!-- ========== SPLASH / LANDING SCREEN ========== -->
+    <div id="splash-screen" class="splash-screen">
+        <div class="splash-content">
+            <div class="splash-logos">
+                <img src="assets/ai.png" alt="AI Logo" class="splash-logo ai-logo" />
+            </div>
+
+            <button id="enterChatBtn" class="splash-button" aria-label="Enter chat with FundEd AI">
+                ASK OUR AI
+            </button>
+        </div>
+    </div>
+    <div class="app-root" id="app-root" style="display:none;">
 
         <!-- ========== SIDEBAR ========== -->
         <aside class="sidebar">
             <div class="sidebar-inner">
+
 
                 <div class="sidebar-divider"></div>
 
@@ -33,21 +46,17 @@
         </aside>
 
         <!-- ========== MAIN CONTENT ========== -->
-        <main class="main">
+        <main class="main" role="main">
 
             <!-- SCROLLABLE RIGHT PANEL -->
             <div class="main-scroll">
 
+
                 <!-- Header -->
                 <section class="header">
-                    <div class="header-top">
-                        <img src="assets/logo_funded.png" class="header-logo" alt="FundEd logo" />
-                    </div>
-
-                    <div class="header-text">
-                        <p class="header-intro">
-                            kısa FundEd acıklamaaı gelicek...
-                        </p>
+                    <div class="header-text" style="margin-top: 24px;">
+                        <button id="backToSplash" class="back-button" aria-label="Back to splash screen">← Back</button>
+                        <h1 class="header-title">FundEd – AI</h1>
                         <p class="header-cta">
                             Ask our AI assistant anything about FundEd.
                         </p>
@@ -55,7 +64,7 @@
                 </section>
 
                 <!-- Chat -->
-                <section id="chat" class="chat-container">
+                <section id="chat" class="chat-container" aria-live="polite">
                     <!-- Chat messages injected here -->
                 </section>
 
@@ -70,8 +79,33 @@
 
         </main>
     </div>
-
     <script src="app.js" defer></script>
+    <script>
+        let inactivityTimer;
+
+        function showSplash() {
+            document.getElementById("splash-screen").style.display = "flex";
+            document.getElementById("app-root").style.display = "none";
+        }
+
+        function showApp() {
+            document.getElementById("splash-screen").style.display = "none";
+            document.getElementById("app-root").style.display = "flex";
+            resetInactivityTimer();
+        }
+
+        function resetInactivityTimer() {
+            clearTimeout(inactivityTimer);
+            inactivityTimer = setTimeout(showSplash, 2 * 60 * 1000); // 2 minutes
+        }
+
+        document.getElementById("enterChatBtn").addEventListener("click", showApp);
+        document.getElementById("backToSplash").addEventListener("click", showSplash);
+
+        ["click", "keydown", "mousemove", "touchstart"].forEach(evt => {
+            document.addEventListener(evt, resetInactivityTimer);
+        });
+    </script>
 </body>
 
 </html>

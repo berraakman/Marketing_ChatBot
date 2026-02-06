@@ -1,3 +1,5 @@
+const API_BASE = "http://localhost:8000";
+
 /* ========= STATE ========= */
 let history = [
     {
@@ -28,7 +30,7 @@ inputEl.addEventListener("keydown", (e) => {
 });
 
 refreshBtn.addEventListener("click", async () => {
-    await fetch("http://localhost:8000/reload", { method: "POST" });
+    await fetch(`${API_BASE}/reload`, { method: "POST" });
     await loadCards(true);
 });
 
@@ -46,17 +48,34 @@ async function send() {
     const typing = renderTyping();
 
     try {
-        const res = await fetch("http://localhost:8000/chat", {
+        const cleanHistory = history.filter(
+            (m) => m.role === "user" || m.role === "assistant"
+        );
+
+        const res = await fetch(`${API_BASE}/chat`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ question: q, history })
+            body: JSON.stringify({
+                question: q,
+                history: cleanHistory.slice(0, -1)
+            })
         });
+
+        if (!res.ok) {
+            throw new Error("Backend error");
+        }
 
         const data = await res.json();
         typing.remove();
 
-        history.push({ role: "assistant", content: data.response });
-        renderMessage("assistant", data.response);
+        const reply =
+            data.response ??
+            data.answer ??
+            data.message ??
+            "Sorry, I couldn’t generate a response.";
+
+        history.push({ role: "assistant", content: reply });
+        renderMessage("assistant", reply);
         scrollBottom();
     } catch (e) {
         typing.remove();
@@ -103,7 +122,10 @@ function renderMessage(role, text) {
     header.appendChild(name);
 
     bubble.appendChild(header);
-    bubble.insertAdjacentHTML("beforeend", text.replace(/\n/g, "<br>"));
+    bubble.insertAdjacentHTML(
+        "beforeend",
+        escapeHtml(text).replace(/\n/g, "<br>")
+    );
 
     row.appendChild(bubble);
     chatEl.appendChild(row);
@@ -141,8 +163,9 @@ async function loadCards(force = false) {
     cardsEl.innerHTML = "";
 
     try {
-        const res = await fetch("http://localhost:8000/cards");
-        const cards = await res.json();
+        const res = await fetch(`${API_BASE}/cards`);
+        const data = await res.json();
+        const cards = Array.isArray(data) ? data : data.cards || [];
 
         cards.forEach((c, i) => {
             const card = document.createElement("div");
@@ -157,6 +180,12 @@ async function loadCards(force = false) {
         });
     } catch (e) {
         cardsEl.innerHTML =
-            "<div class='card-content'>Failed to load cards.</div>";
+            "<div class='card-content'>Quick tips are currently unavailable.</div>";
     }
+}
+
+function escapeHtml(str) {
+    const div = document.createElement("div");
+    div.textContent = str;
+    return div.innerHTML;
 }
