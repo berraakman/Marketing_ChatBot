@@ -6,6 +6,24 @@
     <title>FundEd - AI</title>
     <link rel="stylesheet" href="styles.css" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <style>
+        .header {
+            position: relative;
+        }
+
+        .header-logo {
+            position: absolute;
+            top: 16px;
+            right: 16px;
+            width: 80px;
+            height: auto;
+        }
+
+        .header-logo img {
+            width: 150pxbu;
+            height: auto;
+        }
+    </style>
 </head>
 
 <body>
@@ -19,6 +37,10 @@
             <button id="enterChatBtn" class="splash-button" aria-label="Enter chat with FundEd AI">
                 ASK OUR AI
             </button>
+            <div class="splash-languages"
+                style="margin-top: 16px; font-size: 0.8em; color: #453f3f; font-weight: 300; text-align: center;">
+                You can speak in English, Deutsch, العربية
+            </div>
         </div>
     </div>
     <div class="app-root" id="app-root" style="display:none;">
@@ -53,8 +75,10 @@
 
 
                 <!-- Header -->
-                <section class="header">
-                    <div class="header-text" style="margin-top: 24px;">
+                <section class="header" style="position: relative; padding-top: 16px;">
+
+
+                    <div class="header-text" style="margin-top: 16px;"> <!-- margin-top ile logonun altına kaydır -->
                         <button id="backToSplash" class="back-button" aria-label="Back to splash screen">← Back</button>
                         <h1 class="header-title">FundEd – AI</h1>
                         <p class="header-cta">
