@@ -53,30 +53,39 @@ def chat(req: ChatRequest):
     logging.info(f"Q: {question}")
 
     route = default_router(question, history) or {}
+    intent = route.get("intent")
+    depth = route.get("depth")
 
-    # Greeting or directly handled intents
+    # Fully handled responses (e.g. greetings)
     if route.get("handled"):
         return {"response": route.get("response", "")}
 
-    # Auto pitch mode
-    if route.get("intent") == "auto_pitch":
+
+    # Auto pitch mode (investor-style explanation)
+    if intent in ["about", "auto_pitch"] and depth == "pitch":
         return {
             "response": answer(
-                question="Give a clear startup pitch based on all available knowledge.",
+                question="Give a concise startup pitch explaining FundEd, its problem, solution, product, and value.",
                 history=[]
             )
         }
 
-    # Default QA (RAG)
+    # Standard QA (RAG-based answer)
     return {"response": answer(question, history)}
 
 
 @app.post("/reload")
 def reload_docs():
-    ensure_index()
-    return {"status": "reloaded"}
+    logging.info("🔄 Manual reload triggered")
+    try:
+        ensure_index()
+        return {"status": "reloaded", "message": "Index rebuilt successfully"}
+    except Exception as e:
+        logging.error(f"Reload failed: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @app.get("/cards")
 def cards():
+    logging.info("🧠 /cards endpoint called")
     return get_quick_info_cards()

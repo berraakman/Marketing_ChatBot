@@ -6,6 +6,7 @@ __pycache__/
 *.py[cod]
 *.pyo
 *.pyd
+.python-version
 
 # ===============================
 # Environment variables
@@ -20,6 +21,11 @@ backend/data/chroma/
 *.sqlite3
 
 # ===============================
+# Ollama cache / models (local)
+# ===============================
+.ollama/
+
+# ===============================
 # OS / Editor
 # ===============================
 .DS_Store
@@ -31,6 +37,7 @@ backend/data/chroma/
 # ===============================
 *.log
 *.tmp
+uvicorn.log
 
 # ===============================
 # Frontend build (ileride gerekirse)

@@ -1,6 +1,8 @@
 fastapi
 uvicorn
+pydantic
+requests
 chromadb
 pypdf
-requests
 python-dotenv
+sentence-transformers

@@ -46,10 +46,13 @@ SECTION_HEADERS = [
     "problem",
     "solution",
     "product",
-    "how it works",
-    "target customer",
-    "competitive advantage",
-    "value proposition"
+    "target users",
+    "value proposition",
+    "impact tracking",
+    "revenue model",
+    "why funded",
+    "go-to-market",
+    "vision"
 ]
 
 # ===============================

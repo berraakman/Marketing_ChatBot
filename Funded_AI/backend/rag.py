@@ -15,6 +15,8 @@ from backend.dispatchers import dispatch_en, dispatch_de, dispatch_ar
 from backend.llm import embed, rag_chat
 from backend.llm import semantic_extractor
 
+CARDS_PDF_NAME = "cards.pdf"
+
 
 # ===============================
 # Index / Vector DB
@@ -28,21 +30,42 @@ def ensure_index():
         name="startup_docs",
         metadata={"hnsw:space": "cosine"}
     )
+    cards_col = client.get_or_create_collection(
+        name="cards_docs",
+        metadata={"hnsw:space": "cosine"}
+    )
 
     existing = set(col.get(include=[])["ids"])
 
     for fname in os.listdir(DOCS_DIR):
+        print("📄 Found file:", fname)
+        is_cards_pdf = fname.lower() == CARDS_PDF_NAME
         if not fname.lower().endswith(".pdf"):
             continue
 
         path = os.path.join(DOCS_DIR, fname)
-        doc_id = hashlib.md5(fname.encode()).hexdigest()
+        reader = PdfReader(path)
+        full_text = "\n".join(page.extract_text() or "" for page in reader.pages)
+        print("📄 Extracted text length:", len(full_text))
+
+        doc_id = hashlib.md5((fname + full_text).encode()).hexdigest()
 
         if doc_id in existing:
             continue
 
-        reader = PdfReader(path)
-        full_text = "\n".join(page.extract_text() or "" for page in reader.pages)
+        if is_cards_pdf:
+            sections = split_cards_sections(full_text)
+            for title, text in sections:
+                if not text.strip():
+                    continue
+                emb = embed(text)
+                cards_col.upsert(
+                    ids=[f"card_{title.lower()}"],
+                    documents=[text.strip()],
+                    embeddings=[emb],
+                    metadatas=[{"section": title.lower()}]
+                )
+            continue
 
         sections = split_sections(full_text)
 
@@ -56,6 +79,7 @@ def ensure_index():
                 embeddings=[emb],
                 metadatas=[{"section": title}]
             )
+    print("📦 Chroma collection count after indexing:", col.count())
 
 
 # ===============================
@@ -83,16 +107,35 @@ def split_sections(text: str):
     if current is not None and buffer:
         sections.append((current, "\n".join(buffer)))
 
-    # 🔁 Fallback: semantic extraction via LLM
-    if not sections or sum(len(t) for _, t in sections) < 500:
-        semantic = semantic_extractor(text)
-        sections = [
-            (k, v)
-            for k, v in semantic.items()
-            if k.lower() in SECTION_HEADERS and isinstance(v, str) and v.strip()
-        ]
+    if not sections:
+        return [("document", text)]
 
     return sections
+
+def split_cards_sections(text: str):
+    sections = {}
+    current = None
+
+    normalized_headers = {h.lower(): h.lower() for h in SECTION_HEADERS}
+
+    for line in text.splitlines():
+        line = line.strip()
+        if not line:
+            continue
+
+        lower = line.lower()
+        if lower in normalized_headers:
+            current = normalized_headers[lower]
+            sections[current] = []
+        elif current:
+            sections[current].append(line)
+
+    return [
+        (k, " ".join(v).strip())
+        for k, v in sections.items()
+        if v
+    ]
+
 # ===============================
 # Auto Pitch
 # ===============================
@@ -162,31 +205,28 @@ def retrieve_context(question: str) -> str:
 # Cards (kept for UI)
 # ===============================
 def get_quick_info_cards():
+    print("🧠 Running Quick Info Cards")
     client = chromadb.PersistentClient(path=CHROMA_DIR)
     col = client.get_or_create_collection(
-        name="startup_docs",
+        name="cards_docs",
         metadata={"hnsw:space": "cosine"}
     )
 
     cards = []
 
     for h in SECTION_HEADERS:
-        try:
-            h_emb = embed(h)
-        except ValueError:
-            # Embedding dimension mismatch or model issue → skip cards safely
-            return []
-
-        res = col.query(
-            query_embeddings=[h_emb],
-            n_results=1,
+        key = h.lower()
+        res = col.get(
+            ids=[f"card_{key}"],
             include=["documents"]
         )
 
-        if res.get("documents") and res["documents"][0]:
+        print("🔎 Card lookup for", key, ":", res)
+
+        if res.get("documents") and res["documents"]:
             cards.append({
                 "title": h.title(),
-                "content": res["documents"][0][0][:300]
+                "content": res["documents"][0]
             })
 
     return cards
