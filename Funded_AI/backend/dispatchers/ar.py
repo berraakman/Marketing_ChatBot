@@ -6,7 +6,7 @@ from backend.llm import marketing_chat
 def dispatch(
     question: str,
     history: Optional[List[Dict[str, str]]] = None,
-    context: Optional[dict] = None
+    context: Optional[str] = None
 ):
     if not question or not isinstance(question, str):
         raise ValueError("question boş veya geçersiz")
@@ -17,9 +17,35 @@ def dispatch(
         raise ValueError("history list tipinde olmalı")
 
     messages = [
-        {"role": "system", "content": load_marketing_prompt("ar")},
-        *history,
-        {"role": "user", "content": question}
+        {"role": "system", "content": load_marketing_prompt("ar")}
     ]
+
+    # Inject retrieved context with clear instructions
+    if context:
+        messages.append(
+            {
+                "role": "system",
+                "content": (
+                    "Use the following context to answer the user's question. "
+                    "Answer based on whatever relevant information is available. "
+                    "Only say you lack information if the context contains nothing relevant.\n\n"
+                    f"Context:\n{context}"
+                )
+            }
+        )
+    else:
+        messages.append(
+            {
+                "role": "system",
+                "content": (
+                    "No specific document context was retrieved for this query. "
+                    "Answer based on your general knowledge about FundEd as an education funding platform. "
+                    "Keep your response helpful and brief."
+                )
+            }
+        )
+
+    messages.extend(history)
+    messages.append({"role": "user", "content": question})
 
     return marketing_chat(messages)

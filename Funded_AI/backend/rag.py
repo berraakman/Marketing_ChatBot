@@ -394,11 +394,14 @@ def answer(question: str, history: List[Dict[str, str]]):
     route = default_router(question, history) or {}
 
     context = retrieve_context(question)
+    
+    # Log context availability for debugging (don't block on empty)
+    if context.strip():
+        logger.info(f"Retrieved context length: {len(context)} chars")
+    else:
+        logger.info("No matching context found, LLM will respond based on general knowledge")
 
-    # Handle empty index gracefully
-    if not context.strip():
-        return "I don't have enough information indexed yet. Please ask about FundEd's problem, solution, product, or value proposition."
-
+    # Handle special pitch requests
     if question.lower().strip() in [
         "bu startup'ı anlat",
         "describe the startup",
@@ -418,4 +421,7 @@ def answer(question: str, history: List[Dict[str, str]]):
 
     lang = route.get("lang", "en")
     dispatcher = dispatch_map.get(lang, dispatch_en)
-    return dispatcher(question, history, context)  # type: ignore[misc]
+    
+    # Pass context to dispatcher - it handles None/empty gracefully
+    # The LLM will decide if it has enough information based on the system prompt
+    return dispatcher(question, history, context if context.strip() else None)

@@ -23,12 +23,28 @@ def dispatch(
         {"role": "system", "content": load_marketing_prompt("de")}
     ]
 
-    # Inject retrieved context (if any) as a system message to ground the model
+    # Inject retrieved context with clear instructions
     if context:
         messages.append(
             {
                 "role": "system",
-                "content": f"Context (for grounding, do not quote verbatim):\n{context}"
+                "content": (
+                    "Use the following context to answer the user's question. "
+                    "Answer based on whatever relevant information is available. "
+                    "Only say you lack information if the context contains nothing relevant.\n\n"
+                    f"Context:\n{context}"
+                )
+            }
+        )
+    else:
+        messages.append(
+            {
+                "role": "system",
+                "content": (
+                    "No specific document context was retrieved for this query. "
+                    "Answer based on your general knowledge about FundEd as an education funding platform. "
+                    "Keep your response helpful and brief."
+                )
             }
         )
 
