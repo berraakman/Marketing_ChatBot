@@ -13,6 +13,7 @@ openai==1.12.0
 
 # Vector database (using OpenAI embeddings, no sentence-transformers needed)
 chromadb==0.4.22
+numpy<2.0  # Required for ChromaDB 0.4.22 compatibility
 
 # PDF processing
 pypdf==4.0.1
