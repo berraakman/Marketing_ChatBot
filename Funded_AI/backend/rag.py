@@ -1,5 +1,6 @@
 import os
 import hashlib
+import logging
 import chromadb
 from pypdf import PdfReader
 from typing import List, Dict
@@ -9,22 +10,63 @@ from backend.config import (
     CHROMA_DIR,
     MIN_SIM,
     SECTION_HEADERS,
+    MAX_CONTEXT_TOKENS,
 )
 from backend.router import default_router
 from backend.dispatchers import dispatch_en, dispatch_de, dispatch_ar
-from backend.llm import embed, rag_chat
-from backend.llm import semantic_extractor
+from backend.llm import embed, rag_chat, count_tokens
+
+logger = logging.getLogger(__name__)
 
 CARDS_PDF_NAME = "cards.pdf"
+INDEX_HASH_FILE = ".index_hash"
+
+
+# ===============================
+# Index Hash Management
+# ===============================
+def _compute_docs_hash() -> str:
+    """Compute hash of all documents in DOCS_DIR."""
+    if not os.path.exists(DOCS_DIR):
+        return ""
+    
+    hasher = hashlib.md5()
+    for fname in sorted(os.listdir(DOCS_DIR)):
+        if fname.lower().endswith(".pdf"):
+            path = os.path.join(DOCS_DIR, fname)
+            hasher.update(fname.encode())
+            hasher.update(str(os.path.getmtime(path)).encode())
+            hasher.update(str(os.path.getsize(path)).encode())
+    return hasher.hexdigest()
+
+
+def _get_stored_hash() -> str:
+    """Get the previously stored index hash."""
+    hash_path = os.path.join(CHROMA_DIR, INDEX_HASH_FILE)
+    if os.path.exists(hash_path):
+        with open(hash_path, "r") as f:
+            return f.read().strip()
+    return ""
+
+
+def _store_hash(hash_val: str):
+    """Store the current index hash."""
+    hash_path = os.path.join(CHROMA_DIR, INDEX_HASH_FILE)
+    with open(hash_path, "w") as f:
+        f.write(hash_val)
 
 
 # ===============================
 # Index / Vector DB
 # ===============================
 def ensure_index():
+    """Ensure vector index is up to date. Only rebuilds if documents changed."""
     os.makedirs(DOCS_DIR, exist_ok=True)
     os.makedirs(CHROMA_DIR, exist_ok=True)
 
+    current_hash = _compute_docs_hash()
+    stored_hash = _get_stored_hash()
+    
     client = chromadb.PersistentClient(path=CHROMA_DIR)
     col = client.get_or_create_collection(
         name="startup_docs",
@@ -34,11 +76,18 @@ def ensure_index():
         name="cards_docs",
         metadata={"hnsw:space": "cosine"}
     )
-
+    
+    # Skip if hash matches and collection is not empty
+    if current_hash == stored_hash and col.count() > 0:
+        logger.info(f"Index is up to date (hash: {current_hash[:8]}...), skipping rebuild")  # type: ignore[index]
+        return
+    
+    logger.info(f"Building index (hash changed: {stored_hash[:8] if stored_hash else 'none'}... -> {current_hash[:8]}...)")  # type: ignore[index]
+    
     existing = set(col.get(include=[])["ids"])
 
     for fname in os.listdir(DOCS_DIR):
-        print("📄 Found file:", fname)
+        logger.info(f"Processing file: {fname}")
         is_cards_pdf = fname.lower() == CARDS_PDF_NAME
         if not fname.lower().endswith(".pdf"):
             continue
@@ -46,7 +95,7 @@ def ensure_index():
         path = os.path.join(DOCS_DIR, fname)
         reader = PdfReader(path)
         full_text = "\n".join(page.extract_text() or "" for page in reader.pages)
-        print("📄 Extracted text length:", len(full_text))
+        logger.info(f"Extracted text length: {len(full_text)}")
 
         doc_id = hashlib.md5((fname + full_text).encode()).hexdigest()
 
@@ -79,17 +128,17 @@ def ensure_index():
                 embeddings=[emb],
                 metadatas=[{"section": title}]
             )
-    print("📦 Chroma collection count after indexing:", col.count())
+    
+    # Store the hash after successful indexing
+    _store_hash(current_hash)
+    logger.info(f"Chroma collection count after indexing: {col.count()}")
 
 
 # ===============================
 # Section parsing
 # ===============================
 def split_sections(text: str):
-    """
-    First try deterministic header-based splitting.
-    If nothing meaningful is found, fall back to LLM semantic extraction.
-    """
+    """Split text by section headers."""
     sections = []
     current = None
     buffer = []
@@ -102,7 +151,7 @@ def split_sections(text: str):
             current = line.strip()
             buffer = []
         else:
-            buffer.append(line)
+            buffer.append(line)  # type: ignore[arg-type]
 
     if current is not None and buffer:
         sections.append((current, "\n".join(buffer)))
@@ -112,7 +161,9 @@ def split_sections(text: str):
 
     return sections
 
+
 def split_cards_sections(text: str):
+    """Split cards PDF by section headers."""
     sections = {}
     current = None
 
@@ -128,7 +179,7 @@ def split_cards_sections(text: str):
             current = normalized_headers[lower]
             sections[current] = []
         elif current:
-            sections[current].append(line)
+            sections[current].append(line)  # type: ignore[union-attr]
 
     return [
         (k, " ".join(v).strip())
@@ -136,13 +187,12 @@ def split_cards_sections(text: str):
         if v
     ]
 
+
 # ===============================
 # Auto Pitch
 # ===============================
 def auto_pitch():
-    """
-    Generate a clean startup narrative using all indexed knowledge.
-    """
+    """Generate a clean startup narrative using all indexed knowledge."""
     client = chromadb.PersistentClient(path=CHROMA_DIR)
     col = client.get_or_create_collection(
         name="startup_docs",
@@ -153,7 +203,14 @@ def auto_pitch():
     documents = docs.get("documents", [])
     if not documents:
         return "No startup knowledge indexed yet."
-    full_context = "\n\n".join(documents)
+    
+    # Truncate context to token limit
+    full_context = ""
+    for doc in documents:
+        if count_tokens(full_context + "\n\n" + doc) > MAX_CONTEXT_TOKENS:
+            break
+        full_context += "\n\n" + doc
+    full_context = full_context.strip()
 
     prompt = (
         "Using the following information, write a concise and compelling startup pitch. "
@@ -172,6 +229,7 @@ def auto_pitch():
 # Retrieval
 # ===============================
 def retrieve_context(question: str) -> str:
+    """Retrieve relevant context from vector database."""
     client = chromadb.PersistentClient(path=CHROMA_DIR)
     col = client.get_or_create_collection(
         name="startup_docs",
@@ -186,17 +244,26 @@ def retrieve_context(question: str) -> str:
         include=["documents", "distances", "metadatas"]
     )
 
-    context_blocks = []
+    context_blocks: list[str] = []
+    total_tokens: int = 0
 
     for doc, dist, meta in zip(
         results["documents"][0],
         results["distances"][0],
         results["metadatas"][0],
     ):
-        sim = 1 - dist
+        sim = 1 - dist  # type: ignore[operator]
         if sim >= MIN_SIM:
-            header = meta.get("section", "").upper()
-            context_blocks.append(f"[{header}]\n{doc}")
+            header = meta.get("section", "").upper()  # type: ignore[union-attr]
+            block = f"[{header}]\n{doc}"
+            block_tokens = count_tokens(block)
+            
+            # Stop if we exceed token budget
+            if total_tokens + block_tokens > MAX_CONTEXT_TOKENS:  # type: ignore[operator]
+                break
+                
+            context_blocks.append(block)
+            total_tokens += block_tokens  # type: ignore[operator]
 
     return "\n\n".join(context_blocks)
 
@@ -205,7 +272,8 @@ def retrieve_context(question: str) -> str:
 # Cards (kept for UI)
 # ===============================
 def get_quick_info_cards():
-    print("🧠 Running Quick Info Cards")
+    """Get quick info cards from the cards collection."""
+    logger.info("Running Quick Info Cards")
     client = chromadb.PersistentClient(path=CHROMA_DIR)
     col = client.get_or_create_collection(
         name="cards_docs",
@@ -221,8 +289,6 @@ def get_quick_info_cards():
             include=["documents"]
         )
 
-        print("🔎 Card lookup for", key, ":", res)
-
         if res.get("documents") and res["documents"]:
             cards.append({
                 "title": h.title(),
@@ -236,10 +302,12 @@ def get_quick_info_cards():
 # Orchestration
 # ===============================
 def _sanitize_history(history):
+    """Remove system messages from history."""
     return [m for m in history if m.get("role") != "system"]
 
 
 def answer(question: str, history: List[Dict[str, str]]):
+    """Generate answer to user question."""
     if not question or not isinstance(question, str):
         raise ValueError("question must be a non-empty string")
 
@@ -247,6 +315,10 @@ def answer(question: str, history: List[Dict[str, str]]):
     route = default_router(question, history) or {}
 
     context = retrieve_context(question)
+
+    # Handle empty index gracefully
+    if not context.strip():
+        return "I don't have enough information indexed yet. Please ask about FundEd's problem, solution, product, or value proposition."
 
     if question.lower().strip() in [
         "bu startup'ı anlat",
@@ -267,4 +339,4 @@ def answer(question: str, history: List[Dict[str, str]]):
 
     lang = route.get("lang", "en")
     dispatcher = dispatch_map.get(lang, dispatch_en)
-    return dispatcher(question, history, context)
+    return dispatcher(question, history, context)  # type: ignore[misc]

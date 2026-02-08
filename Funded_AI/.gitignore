@@ -50,4 +50,4 @@ node_modules/
 # Misc
 # ===============================
 coverage/
-.pytest_cache/
+.pytest_cache/data/
