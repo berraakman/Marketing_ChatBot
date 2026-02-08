@@ -276,6 +276,14 @@ def cards(request: Request):
 # ===============================
 # Static Files (Frontend)
 # ===============================
-# Mount frontend static files (CSS, JS, assets)
+# Mount at paths that match what HTML expects (no /static prefix needed)
+# This makes frontend code cleaner and backend the single source of truth
 if os.path.exists(FRONTEND_DIR):
+    # Mount assets directory at /assets (for images, fonts, etc.)
+    assets_dir = os.path.join(FRONTEND_DIR, "assets")
+    if os.path.exists(assets_dir):
+        app.mount("/assets", StaticFiles(directory=assets_dir), name="assets")
+    
+    # Mount root frontend files at /static (for CSS, JS)
+    # These are accessed as /static/styles.css, /static/app.js
     app.mount("/static", StaticFiles(directory=FRONTEND_DIR), name="static")
