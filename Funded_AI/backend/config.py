@@ -33,7 +33,7 @@ PROMPT_DIR = os.path.join(BASE_DIR, "backend", "prompts")
 # ===============================
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 OPENAI_CHAT_MODEL = os.getenv("OPENAI_CHAT_MODEL", "gpt-4o-mini-2024-07-18")
-OPENAI_EMBED_MODEL = os.getenv("OPENAI_EMBED_MODEL", "text-embedding-3-small")
+OPENAI_EMBED_MODEL = os.getenv("OPENAI_EMBED_MODEL", "text-embedding-3-large")
 
 # Timeout for OpenAI API calls in seconds
 OPENAI_TIMEOUT = int(os.getenv("OPENAI_TIMEOUT", "60"))
