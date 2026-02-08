@@ -6,6 +6,7 @@ from typing import List, Dict
 from fastapi import FastAPI, HTTPException, Request, Header
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
 from pydantic import BaseModel, field_validator
 from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.util import get_remote_address
@@ -34,6 +35,12 @@ logging.basicConfig(
     datefmt="%Y-%m-%dT%H:%M:%S",
 )
 logger = logging.getLogger(__name__)
+
+# ===============================
+# Frontend Directory
+# ===============================
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+FRONTEND_DIR = os.path.join(BASE_DIR, "frontend")
 
 # ===============================
 # Rate Limiter
@@ -171,12 +178,11 @@ def readiness():
 
 @app.get("/")
 def root():
-    """Root endpoint - returns basic info."""
-    return {
-        "service": "FundEd Marketing Chatbot",
-        "status": "ok",
-        "version": "1.0.0",
-    }
+    """Serve chat frontend."""
+    index_path = os.path.join(FRONTEND_DIR, "index.html")
+    if os.path.exists(index_path):
+        return FileResponse(index_path, media_type="text/html")
+    return {"service": "FundEd Marketing Chatbot", "status": "ok", "version": "1.0.0"}
 
 
 # ===============================
@@ -270,9 +276,6 @@ def cards(request: Request):
 # ===============================
 # Static Files (Frontend)
 # ===============================
-# Mount frontend static files
-BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-FRONTEND_DIR = os.path.join(BASE_DIR, "frontend")
-
+# Mount frontend static files (CSS, JS, assets)
 if os.path.exists(FRONTEND_DIR):
     app.mount("/static", StaticFiles(directory=FRONTEND_DIR), name="static")
