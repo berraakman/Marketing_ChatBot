@@ -64,6 +64,17 @@ def ensure_index():
     os.makedirs(DOCS_DIR, exist_ok=True)
     os.makedirs(CHROMA_DIR, exist_ok=True)
 
+    # Diagnostic logging for path resolution
+    logger.info(f"DOCS_DIR resolved to: {DOCS_DIR}")
+    logger.info(f"CHROMA_DIR resolved to: {CHROMA_DIR}")
+    
+    if os.path.exists(DOCS_DIR):
+        files = os.listdir(DOCS_DIR)
+        pdf_files = [f for f in files if f.lower().endswith('.pdf')]
+        logger.info(f"Found {len(pdf_files)} PDF files in DOCS_DIR: {pdf_files}")
+    else:
+        logger.warning(f"DOCS_DIR does not exist: {DOCS_DIR}")
+
     current_hash = _compute_docs_hash()
     stored_hash = _get_stored_hash()
     

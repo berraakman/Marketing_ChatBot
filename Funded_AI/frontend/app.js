@@ -1,4 +1,5 @@
-const API_BASE = "http://localhost:8000";
+// Use relative URLs - works on both localhost and production
+const API_BASE = "";
 
 /* ========= STATE ========= */
 let history = [
@@ -111,8 +112,8 @@ function renderMessage(role, text) {
     avatar.style.borderRadius = "50%";
     avatar.src =
         role === "user"
-            ? "assets/user.png"
-            : "assets/ai.png";
+            ? "/assets/user.png"
+            : "/assets/ai.png";
 
     const name = document.createElement("span");
     name.className = `chat-name ${role === "user" ? "user-name" : ""}`;

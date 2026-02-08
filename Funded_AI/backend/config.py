@@ -3,17 +3,12 @@ import os
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 # ===============================
-# Railway Volume Paths
+# Data Paths (relative to repo root)
 # ===============================
-# Railway volume is mounted at /data
-# These can be overridden via environment variables
-CHROMA_DIR = os.getenv("CHROMA_DIR", "/data/chroma")
-DOCS_DIR = os.getenv("DOCS_DIR", "/data/docs")
-
-# Fallback to local paths for development
-if os.getenv("RAILWAY_ENVIRONMENT") is None:
-    CHROMA_DIR = os.getenv("CHROMA_DIR", os.path.join(BASE_DIR, "data", "chroma"))
-    DOCS_DIR = os.getenv("DOCS_DIR", os.path.join(BASE_DIR, "data", "docs"))
+# Since Railway volumes are not available, use repo-relative paths
+# These work in both development and production (via COPY . . in Dockerfile)
+CHROMA_DIR = os.getenv("CHROMA_DIR", os.path.join(BASE_DIR, "data", "chroma"))
+DOCS_DIR = os.getenv("DOCS_DIR", os.path.join(BASE_DIR, "data", "docs"))
 
 # ===============================
 # Conversation / routing settings
