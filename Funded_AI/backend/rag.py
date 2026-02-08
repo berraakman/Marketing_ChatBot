@@ -148,8 +148,54 @@ def ensure_index():
 # ===============================
 # Section parsing
 # ===============================
+
+# Chunking configuration
+CHUNK_SIZE = 500      # Characters per chunk (good for embedding context window)
+CHUNK_OVERLAP = 100   # Overlap to preserve semantic continuity
+
+
+def chunk_text(text: str, chunk_size: int = CHUNK_SIZE, overlap: int = CHUNK_OVERLAP) -> List[str]:
+    """
+    Split text into overlapping chunks of specified size.
+    
+    For a ~1800 char document with chunk_size=500, overlap=100:
+    - Chunk 1: chars 0-500
+    - Chunk 2: chars 400-900 (100 char overlap)
+    - Chunk 3: chars 800-1300
+    - Chunk 4: chars 1200-1700
+    - Chunk 5: chars 1600-1800
+    = ~5 chunks (good for n_results=4)
+    """
+    if len(text) <= chunk_size:
+        return [text] if text.strip() else []
+    
+    chunks = []
+    start = 0
+    while start < len(text):
+        end = start + chunk_size
+        chunk = text[start:end]
+        
+        # Try to break at sentence boundary if not at end
+        if end < len(text):
+            # Look for sentence endings in last 20% of chunk
+            break_zone = chunk[int(chunk_size * 0.8):]
+            for sep in ['. ', '.\n', '! ', '?\n', '\n\n']:
+                if sep in break_zone:
+                    break_idx = chunk.rfind(sep) + len(sep)
+                    chunk = chunk[:break_idx]
+                    end = start + break_idx
+                    break
+        
+        if chunk.strip():
+            chunks.append(chunk.strip())
+        
+        start = end - overlap
+    
+    return chunks
+
+
 def split_sections(text: str):
-    """Split text by section headers."""
+    """Split text by section headers, with chunking fallback."""
     sections = []
     current = None
     buffer = []
@@ -167,10 +213,24 @@ def split_sections(text: str):
     if current is not None and buffer:
         sections.append((current, "\n".join(buffer)))
 
+    # If no section headers found, use character-based chunking
     if not sections:
-        return [("document", text)]
-
-    return sections
+        logger.info(f"No section headers found, using character-based chunking (size={CHUNK_SIZE}, overlap={CHUNK_OVERLAP})")
+        chunks = chunk_text(text)
+        logger.info(f"Created {len(chunks)} chunks from document")
+        return [(f"chunk_{i}", chunk) for i, chunk in enumerate(chunks)]
+    
+    # If sections found but any are too long, chunk them too
+    final_sections = []
+    for title, content in sections:
+        if len(content) > CHUNK_SIZE * 2:  # Section is too long
+            chunks = chunk_text(content)
+            for i, chunk in enumerate(chunks):
+                final_sections.append((f"{title}_part{i}", chunk))
+        else:
+            final_sections.append((title, content))
+    
+    return final_sections
 
 
 def split_cards_sections(text: str):
@@ -247,11 +307,19 @@ def retrieve_context(question: str) -> str:
         metadata={"hnsw:space": "cosine"}
     )
 
+    # Dynamic n_results to avoid "requested results > elements" error
+    collection_size = col.count()
+    n_results = min(4, collection_size) if collection_size > 0 else 1
+    
+    if collection_size == 0:
+        logger.warning("No documents in collection, cannot retrieve context")
+        return ""
+
     q_emb = embed(question)
 
     results = col.query(
         query_embeddings=[q_emb],
-        n_results=6,
+        n_results=n_results,
         include=["documents", "distances", "metadatas"]
     )
 
