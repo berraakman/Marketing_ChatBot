@@ -98,9 +98,12 @@ def _openai_chat_with_retry(
 
 
 @retry(
-    stop=stop_after_attempt(3),
-    wait=wait_exponential(multiplier=1, min=2, max=30),
+    stop=stop_after_attempt(5),  # More attempts for startup
+    wait=wait_exponential(multiplier=2, min=5, max=60),  # Longer waits
     retry=retry_if_exception_type((Exception,)),
+    before_sleep=lambda retry_state: logger.warning(
+        f"Retrying embedding call, attempt {retry_state.attempt_number}"
+    ),
 )
 def _openai_embed_with_retry(text: str) -> List[float]:
     """Make OpenAI embedding request with retry logic."""

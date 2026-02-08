@@ -54,6 +54,8 @@ limiter = Limiter(key_func=get_remote_address)
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Application lifespan: startup and shutdown events."""
+    import asyncio
+    
     # Startup
     logger.info("Application starting up...")
     
@@ -64,12 +66,17 @@ async def lifespan(app: FastAPI):
         logger.critical(f"Configuration validation failed: {e}")
         raise
     
+    # Delay indexing to allow network to stabilize on Railway
+    logger.info("Waiting 10s for network stabilization before indexing...")
+    await asyncio.sleep(10)
+    
     try:
         ensure_index()
         logger.info("Index ensured successfully")
     except Exception as e:
         logger.error(f"Index initialization error: {e}")
-        # Don't crash - index can be built later via /reload
+        logger.info("Index can be built later via POST /reload endpoint")
+        # Don't crash - app is still usable, just needs manual reload
     
     yield
     
