@@ -428,14 +428,14 @@ body {
     animation: heroFade 0.6s ease-out;
 }
 
-/* ===== DEVELOPER SIGNATURE WATERMARK ===== */
+/*DEVELOPER SIGNATURE WATERMARK*/
 .developer-signature {
     position: fixed;
     top: 1rem;
     right: 1.5rem;
     font-size: 0.7rem;
     font-weight: 500;
-    color: var(--text-muted);
+    color: #453f3f;
     opacity: 0.55;
     pointer-events: none;
     user-select: none;
