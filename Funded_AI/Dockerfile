@@ -1,6 +1,6 @@
 # Production Dockerfile for Railway deployment
 FROM python:3.11-slim
-
+ENV ANONYMIZED_TELEMETRY=False
 # Install system dependencies for chromadb and sentence-transformers
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
