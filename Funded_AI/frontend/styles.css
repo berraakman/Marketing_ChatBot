@@ -20,7 +20,7 @@ html,
 body {
     margin: 0;
     padding: 0;
-    height: 100%;
+    height: 100dvh;
     background: var(--bg-main);
     font-family: Inter, sans-serif;
     color: var(--text-main);
@@ -29,7 +29,7 @@ body {
 
 .app-root {
     display: flex;
-    height: 100vh;
+    height: 100dvh;
     background: var(--bg-main);
 }
 
@@ -130,7 +130,7 @@ body {
     flex: 1;
     display: flex;
     flex-direction: column;
-    height: 100vh;
+    height: 100dvh;
     overflow: hidden;
     padding: 1.2rem;
     position: relative;
@@ -187,6 +187,8 @@ body {
     display: flex;
     flex-direction: column;
     overflow-y: auto;
+    flex: 1;
+    /* allow it to grow */
     min-height: 0;
 }
 
@@ -450,6 +452,83 @@ body {
         font-size: 0.6rem;
         top: 0.5rem;
         right: 0.75rem;
+    }
+
+    /* Hide sidebar on mobile to prioritize chat */
+    .sidebar {
+        display: none;
+    }
+
+    /* Remove the middle border line */
+    .main::before {
+        display: none;
+    }
+
+    /* Adjust main padding for mobile screens */
+    .main {
+        padding: 0.8rem;
+    }
+
+    /* Update header texts */
+    .header-title {
+        font-size: 1.8rem;
+    }
+
+    .header-intro {
+        font-size: 1.8rem;
+    }
+
+    .header-cta {
+        font-size: 1rem;
+    }
+
+    /* Allow chat bubbles to take more horizontal space */
+    .chat-bubble {
+        max-width: 90%;
+        padding: 0.6rem 0.8rem;
+        font-size: 0.95rem;
+    }
+
+    /* Adjust splash screen elements for smaller height/width */
+    .splash-logo.ai-logo {
+        height: 180px;
+    }
+
+    .splash-button {
+        font-size: 1.4rem;
+        padding: 16px 40px;
+    }
+
+    .splash-logos {
+        margin-bottom: 24px;
+    }
+
+    /* Make input vertical layout on mobile for easier typing */
+    .chat-input {
+        flex-direction: row;
+        /* keep it row on mobile so button is next to it */
+        gap: 6px;
+        margin-top: 6px;
+        padding-top: 6px;
+        align-items: flex-end;
+        /* Align button to bottom in case textarea expands */
+    }
+
+    .chat-input button {
+        width: auto;
+        /* don't take full width */
+        height: 48px;
+        padding: 0 16px;
+        /* give smaller padding */
+        font-size: 0.9rem;
+    }
+
+    .chat-input textarea {
+        min-height: 48px;
+        padding: 12px;
+        font-size: 0.95rem;
+        /* slightly smaller text */
+        border-radius: 14px;
     }
 }
 
