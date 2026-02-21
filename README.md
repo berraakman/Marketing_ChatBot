@@ -25,14 +25,14 @@ A production-ready, highly responsive RAG (Retrieval-Augmented Generation) chatb
 ### Desktop Experience
 Take a look at how spacious and clean the interaction is for users on computers or large booth tablets:
 
-![Desktop UI Preview 1](assets/desktop1.png)
-![Desktop UI Preview 2](assets/desktop2.png)
+![Desktop UI Preview 1](Funded_AI/frontend/assets/desktop1.png)
+![Desktop UI Preview 2](Funded_AI/frontend/assets/desktop2.png)
 
 ### Mobile Experience (Optimized)
 When an attendee scans a QR code, they get a perfectly scaled, intuitive messaging interface tailored for thumbs and variable viewport sizes:
 
-![Mobile UI Preview 1](assets/mobile1.png)
-![Mobile UI Preview 2](assets/mobile2.png)
+![Mobile UI Preview 1](Funded_AI/frontend/assets/mobile1.PNG)
+![Mobile UI Preview 2](Funded_AI/frontend/assets/mobile2.PNG)
 
 ---
 
