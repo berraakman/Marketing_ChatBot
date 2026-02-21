@@ -19,6 +19,16 @@ This chatbot serves as FundEd's AI assistant, answering questions about the plat
 - **Self-Contained**: Frontend served from the same backend (no separate deployment)
 - **Railway-Optimized**: Works without persistent volumes, builds index from bundled PDFs
 
+## UI Previews
+
+### Desktop
+![Desktop View 1](assets/desktop1.png)
+![Desktop View 2](assets/desktop2.png)
+
+### Mobile
+![Mobile View 1](assets/mobile1.png)
+![Mobile View 2](assets/mobile2.png)
+
 ## Architecture
 
 ```
