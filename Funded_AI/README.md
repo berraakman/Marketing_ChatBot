@@ -1,37 +1,46 @@
-# FundEd Marketing Chatbot
+# FundEd AI – Marketing & Lead Generation Chatbot 🚀
 
-A production-ready RAG-powered chatbot for FundEd, designed for marketing presentations and first-touch conversations at events and booths.
+A production-ready, highly responsive RAG (Retrieval-Augmented Generation) chatbot explicitly designed to act as an AI Marketing Booth Assistant for FundEd. It handles investor, founder, and partner inquiries dynamically in multiple languages seamlessly—perfect for events and product presentations.
 
 ![Python](https://img.shields.io/badge/Python-3.11+-blue)
 ![FastAPI](https://img.shields.io/badge/FastAPI-0.109-green)
 ![OpenAI](https://img.shields.io/badge/OpenAI-GPT--4o--mini-purple)
+![Responsive](https://img.shields.io/badge/Mobile-Optimized-success)
 ![Railway](https://img.shields.io/badge/Deploy-Railway-blueviolet)
 
-## Overview
+---
 
-This chatbot serves as FundEd's AI assistant, answering questions about the platform using Retrieval-Augmented Generation (RAG). It retrieves relevant context from indexed PDF documents and generates natural, marketing-friendly responses.
+## 🌟 Key Features
 
-### Key Features
+- **Responsive & Modern UI:** A beautiful, responsive frontend with tailored views for both Desktop browsers and Mobile phone users (featuring custom dynamic viewport scaling).
+- **RAG Pipeline (`ChromaDB`):** Instantly parses your FundEd presentation/pitch PDFs, embeds them dynamically, and answers incredibly specific queries correctly.
+- **Multi-Lingual AI:** The Dispatcher architecture determines language intent instantly—capable of pitching the startup natively in **English, German, and Arabic**.
+- **Production-Ready & Secure:** Out-of-the-box Rate Limiting via `slowapi`, configurable CORS, and Prompt Injection safeguards protect your backend.
+- **Instant Deployments:** The Frontend and Backend are merged elegantly—FastAPI serves both. Zero configuration required for platforms like Railway.
 
-- **RAG Pipeline**: ChromaDB vector store + OpenAI embeddings for accurate retrieval
-- **Multi-language Support**: English, German, and Arabic dispatchers
-- **Production-Ready**: Rate limiting, CORS, admin endpoints, graceful error handling
-- **Self-Contained**: Frontend served from the same backend (no separate deployment)
-- **Railway-Optimized**: Works without persistent volumes, builds index from bundled PDFs
+---
 
-## UI Previews
+## 📸 UI Previews
 
-### Desktop
-![Desktop View 1](assets/desktop1.png)
-![Desktop View 2](assets/desktop2.png)
+### Desktop Experience
+Take a look at how spacious and clean the interaction is for users on computers or large booth tablets:
 
-### Mobile
-![Mobile View 1](assets/mobile1.png)
-![Mobile View 2](assets/mobile2.png)
+![Desktop UI Preview 1](assets/desktop1.png)
+![Desktop UI Preview 2](assets/desktop2.png)
 
-## Architecture
+### Mobile Experience (Optimized)
+When an attendee scans a QR code, they get a perfectly scaled, intuitive messaging interface tailored for thumbs and variable viewport sizes:
 
-```
+![Mobile UI Preview 1](assets/mobile1.png)
+![Mobile UI Preview 2](assets/mobile2.png)
+
+---
+
+## 🛠 Project Architecture
+
+The application handles everything in one place. FastAPI acts as the backbone, serving the stunning frontend while also performing complex vector calculations and LLM calls under the hood.
+
+```text
 ┌─────────────────────────────────────────────────────────────┐
 │                        Frontend                             │
 │   index.html + styles.css + app.js (served via FastAPI)    │
@@ -52,187 +61,82 @@ This chatbot serves as FundEd's AI assistant, answering questions about the plat
 └─────────────────────────────────────────────────────────────┘
 ```
 
-## Project Structure
+---
 
-```
-Funded_AI/
-├── backend/
-│   ├── app.py              # FastAPI application, routes, middleware
-│   ├── config.py           # Environment configuration
-│   ├── rag.py              # RAG pipeline: indexing, retrieval, chunking
-│   ├── llm.py              # OpenAI API calls (chat, embeddings)
-│   ├── router.py           # Intent routing and language detection
-│   ├── dispatchers/        # Language-specific response handlers
-│   │   ├── en.py           # English dispatcher
-│   │   ├── de.py           # German dispatcher
-│   │   └── ar.py           # Arabic dispatcher
-│   └── prompts/            # System prompts for the LLM
-│       └── marketing_system.txt
-├── frontend/
-│   ├── index.html          # Chat UI
-│   ├── styles.css          # Styling
-│   ├── app.js              # Frontend logic
-│   └── assets/             # Images (ai.png, user.png)
-├── data/
-│   └── docs/               # PDF documents for RAG indexing
-│       ├── FundEd.pdf      # Main knowledge base
-│       └── cards.pdf       # Info cards content
-├── Dockerfile              # Production Docker image
-├── railway.toml            # Railway deployment config
-├── requirements.txt        # Python dependencies
-└── .env.example            # Environment variables template
-```
+## 🚀 Quick Start (Local Development)
 
-## Quick Start
-
-### Prerequisites
+### 1. Requirements
 
 - Python 3.11+
-- OpenAI API key
+- An OpenAI API key
 
-### Local Development
+### 2. Setup Process
 
-1. **Clone and setup**
-   ```bash
-   cd Funded_AI
-   python -m venv venv
-   source venv/bin/activate  # Windows: venv\Scripts\activate
-   pip install -r requirements.txt
-   ```
-
-2. **Configure environment**
-   ```bash
-   cp .env.example .env
-   # Edit .env and add your OPENAI_API_KEY
-   ```
-
-3. **Add your PDFs**
-   ```bash
-   # Place PDF documents in data/docs/
-   ```
-
-4. **Run the server**
-   ```bash
-   uvicorn backend.app:app --reload --port 8000
-   ```
-
-5. **Open the UI**
-   ```
-   http://localhost:8000
-   ```
-
-## Environment Variables
-
-| Variable | Required | Default | Description |
-|----------|----------|---------|-------------|
-| `OPENAI_API_KEY` | ✅ | - | Your OpenAI API key |
-| `OPENAI_CHAT_MODEL` | ❌ | `gpt-4o-mini-2024-07-18` | Chat model |
-| `OPENAI_EMBED_MODEL` | ❌ | `text-embedding-3-large` | Embedding model |
-| `ADMIN_TOKEN` | ❌ | - | Token for `/reload` endpoint |
-| `RATE_LIMIT` | ❌ | `15/minute` | Rate limit per IP |
-| `ALLOWED_ORIGINS` | ❌ | `*` | CORS allowed origins |
-
-## API Endpoints
-
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| `GET` | `/` | Serves the chat frontend |
-| `GET` | `/health` | Health check |
-| `POST` | `/chat` | Main chat endpoint |
-| `GET` | `/pitch` | Auto-generated startup pitch |
-| `GET` | `/info-cards` | Retrieve info card content |
-| `POST` | `/reload` | Rebuild document index (requires `X-Admin-Token`) |
-
-### Chat Request Example
-
+Clone the repository and jump into the directory:
 ```bash
-curl -X POST http://localhost:8000/chat \
-  -H "Content-Type: application/json" \
-  -d '{
-    "question": "What problem does FundEd solve?",
-    "history": []
-  }'
+git clone https://github.com/berraakman/Marketing_ChatBot.git
+cd Marketing_ChatBot/Funded_AI
 ```
 
-### Reload Index
-
+Activate an environment and install dependencies:
 ```bash
-curl -X POST https://your-app.railway.app/reload \
-  -H "X-Admin-Token: your-admin-token"
+python3 -m venv venv
+source venv/bin/activate  # On Windows: venv\Scripts\activate
+pip install -r requirements.txt
 ```
 
-## Deployment
+### 3. Environment Variables
+Copy the `.env.example` file to create your own `.env` file:
+```bash
+cp .env.example .env
+```
+Open the `.env` file and strictly supply your `OPENAI_API_KEY`. (There are additional options for rate limits, models, etc.)
 
-### Railway (Recommended)
+### 4. Inject Knowledge!
+Place any presentation, brochure, or startup PDFs you want the AI to read into the `data/docs/` folder.
 
-1. **Connect your repository** to Railway
-2. **Set environment variables** in Railway dashboard:
-   - `OPENAI_API_KEY`
-   - `ADMIN_TOKEN`
-3. **Deploy** - Railway auto-detects the Dockerfile
+### 5. Launch the Server
+Start the magic:
+```bash
+uvicorn backend.app:app --reload --port 8080 --host 0.0.0.0 --env-file .env
+```
+Visit `http://localhost:8080` to interact with your local bot!
 
-The app will:
-- Build the Docker image
-- Index PDFs from `data/docs/` at startup
-- Serve the frontend and API on the same URL
+---
 
-### Docker
+## ☁️ Deployment
 
+### The Railway Route (Easiest)
+This project is configured right out of the box to deploy gracefully onto Railway using its innate Docker compatibility.
+
+1. Connect this GitHub Repository.
+2. In your Railway settings, set the `OPENAI_API_KEY` and an `ADMIN_TOKEN`.
+3. Hit Deploy. The server will natively build the vector index and expose both your frontend and API endpoints!
+
+### Docker Method
+If you're deploying on a custom VPS, just build the image:
 ```bash
 docker build -t funded-chatbot .
-docker run -p 8080:8080 \
-  -e OPENAI_API_KEY=sk-... \
-  -e ADMIN_TOKEN=your-token \
-  funded-chatbot
+docker run -p 8080:8080 -e OPENAI_API_KEY=sk-... -e ADMIN_TOKEN=your-token funded-chatbot
 ```
 
-## How It Works
+---
 
-### Document Indexing
+## 🧰 Customization & Commands
 
-1. PDFs in `data/docs/` are parsed using `pypdf`
-2. Text is split into 500-character chunks with 100-character overlap
-3. Each chunk is embedded using OpenAI's embedding model
-4. Embeddings are stored in ChromaDB
+**How do I update the bot's knowledge?**
+Whenever you add new PDFs to `data/docs/`, you can tell the server to reindex them live (without stopping it) by pinging the reload endpoint:
 
-### Query Flow
+```bash
+curl -X POST http://localhost:8080/reload \
+  -H "X-Admin-Token: <YOUR_ADMIN_TOKEN_FROM_ENV>"
+```
 
-1. User sends a question via `/chat`
-2. Question is embedded and matched against stored chunks
-3. Top 4 relevant chunks are retrieved (if similarity > 0.5)
-4. Context + question are sent to GPT-4o-mini
-5. Model generates a natural response grounded in the context
+**How do I change its personality?**
+Simply tweak the instructions located in `backend/prompts/marketing_system.txt`.
 
-## Customization
+**Troubleshooting:**
+If the bot ever fails to boot, ensure your PDFs exist in `data/docs/` and that your OpenAI API Key is valid.
 
-### Adding Documents
-
-1. Add PDF files to `data/docs/`
-2. Trigger reindex:
-   ```bash
-   curl -X POST https://your-app.railway.app/reload \
-     -H "X-Admin-Token: your-token"
-   ```
-
-### Modifying Prompts
-
-Edit `backend/prompts/marketing_system.txt` to change the chatbot's personality and response style.
-
-### Adding Languages
-
-1. Create `backend/dispatchers/XX.py` (copy from `en.py`)
-2. Create `backend/prompts/marketing_XX.txt`
-3. Add the language to the dispatch map in `backend/rag.py`
-
-## Troubleshooting
-
-| Issue | Solution |
-|-------|----------|
-| "Chroma collection count: 0" | Check PDFs exist in `data/docs/` and rebuild index |
-| APIConnectionError at startup | Network not ready; app retries automatically |
-| "Unauthorized" on /reload | Use `X-Admin-Token` header (not `Authorization: Bearer`) |
-| Empty responses | Check OpenAI API key is valid |
-
-## License
-
-Proprietary - FundEd © 2026
+---
+*Proprietary - FundEd © 2026. Developed with ❤️ by Berra Akman.*
